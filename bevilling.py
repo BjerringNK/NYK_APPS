@@ -172,7 +172,7 @@ if btn:
             risk_reason = "Privat Realkredit til ejer-/fritidshus med LTV > 60% og gældsfaktor > 4"
 
     if risk_override:
-        approver = "Kreditpolitik & Bevilling (risikolån)"
+        approver = "Kredit København (risikolån)"
         first_crossed = None
         addon_active = False
         crossing_reason = ""
@@ -260,6 +260,7 @@ if btn:
         "ellers (samme 10 mio.-blok) kan **Erhvervschef eller Lokalbankdirektør** anvende tillægsbeføjelse. "
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) skal bevilges af **Kredit København**."
     )
+
 
 
 
