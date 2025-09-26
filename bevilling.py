@@ -168,7 +168,7 @@ if btn:
             risk_reason = "Privat Realkredit-lån til ejer-/fritidshus med LTV > 60% og gældsfaktor > 4"
 
     if risk_override:
-        approver = "Kreditpolitik & Bevilling (risikolån)"
+        approver = "Kredit København (Risikolån)"
         crossed = None
         addon_active = False
     else:
@@ -237,6 +237,7 @@ if btn:
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) bevilges i **Kreditpolitik & Bevilling**. "
         "• For **Erhverv** vises “ny erhvervskunde”-reglen kun som huskeregel (ikke del af beregningen)."
     )
+
 
 
 
