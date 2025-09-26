@@ -7,9 +7,14 @@ st.set_page_config(page_title="Bevillingsberegner", page_icon="✅", layout="cen
 def fmt_dkk(x: float) -> str:
     return f"{x:,.0f} kr".replace(",", ".")
 
-def crossed_multiple_of_10m(prev_total: float, new_total: float) -> int | None:
+def fmt_mio(x_mio: float) -> str:
+    """Formatér mio.-tal med dansk decimal-komma, fx 29,99"""
+    return f"{x_mio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+def first_crossed_multiple_of_10m(prev_total: float, new_total: float) -> int | None:
     """
-    Returner 20, 30, 40, … hvis et (mindst ét) nyt 10 mio.-multiplum i SAMLET engagement er passeret; ellers None.
+    Returnér den FØRSTE passerede grænse i mio. (20, 30, 40, …),
+    hvis samlet engagement krydser et 10-mio.-multiplum; ellers None.
     """
     ten = 10_000_000
     if new_total < 20_000_000:
@@ -17,11 +22,11 @@ def crossed_multiple_of_10m(prev_total: float, new_total: float) -> int | None:
     k_prev = int(prev_total // ten)
     k_new  = int(new_total  // ten)
     if k_new > k_prev and k_new >= 2:
-        return k_new * 10
+        # første passerede grænse er (k_prev+1)*10 mio.
+        return (k_prev + 1) * 10
     return None
 
 def normalize_limits(r: float, e: float, l: float):
-    """Sørg for stigende grænser. Returnerer (limits, corrected_flag)."""
     corrected = not (r < e < l)
     vals = sorted([r, e, l])
     return {"Rådgiver": vals[0], "Erhvervschef": vals[1], "Lokalbankdirektør": vals[2]}, corrected
@@ -40,7 +45,6 @@ def choose_role_first_time(total: float, bank_amount: float, limits: dict) -> st
     return "Kredit"
 
 def choose_role_normal(total: float, limits: dict) -> str:
-    """Efter første Kredit (eller hvis bank-reglen ikke er relevant): kun A) total ≤ role_limit."""
     if total <= limits["Rådgiver"]:
         return "Rådgiver"
     if total <= limits["Erhvervschef"]:
@@ -102,16 +106,16 @@ if include_rk and segment == "Privat":
 
 st.divider()
 
-# Tidligere Kredit (checkbox med punktopstillet hjælp + 50%-regel forklaring og eksempel)
+# Tidligere Kredit – punktopstillede regler + 50%-regel/eksempel
 approved_by_credit_before = st.checkbox(
     "Tidligere bevilget i Kredit/Regional Kredit",
     value=False,
     help=(
-        "• Hvis markeret: \n"
-        "   – 10 mio.-spring: Passeres et nyt multiplum af 10 mio. i samlet engagement (20, 30, 40, …), skal bevillingen ske i Kredit.\n"
-        "   – Tillægsbeføjelse: Hvis der IKKE passeres et multiplum og man er i samme 10 mio.-blok (fx 21→25), kan Erhvervschef eller Lokalbankdirektør bevilge.\n"
-        "• Hvis IKKE markeret (første gang): \n"
-        "   – 50%-regel for Bank: Den godkendende rolle må højst bevilge Bank svarende til 50% af rolle-beføjelsen i 'samlet engagement'.\n"
+        "• Hvis markeret:\n"
+        "   – 10 mio.-spring: Passeres et nyt multiplum af 10 mio. i **samlet engagement** (20, 30, 40, …), skal bevillingen ske i **Kredit**.\n"
+        "   – Tillægsbeføjelse: Hvis der **ikke** passeres et multiplum, og man er i **samme 10 mio.-blok** (fx 21→25), kan **Erhvervschef eller Lokalbankdirektør** bevilge.\n"
+        "• Hvis **ikke** markeret (første gang):\n"
+        "   – **50%-regel for Bank**: Den godkendende rolle må højst bevilge **Bank = 50%** af rolle-beføjelsen i 'samlet engagement'.\n"
         "   – Standardgrænser ⇒ Rådgiver 3,0 mio., Erhvervschef 5,0 mio., Lokalbankdirektør 10,0 mio.\n"
         "   – Eksempel: 5,0 mio. Realkredit + 0,2 mio. Bank = 5,2 mio. samlet → Rådgiver kan bevilge (bank 0,2 ≤ 3,0)."
     )
@@ -169,25 +173,27 @@ if btn:
 
     if risk_override:
         approver = "Kreditpolitik & Bevilling (risikolån)"
-        crossed = None
+        first_crossed = None
         addon_active = False
         crossing_reason = ""
     else:
         # Tidligere Kredit → 10m-spring og tillægsbeføjelse
-        crossed = crossed_multiple_of_10m(prev_total, new_total) if approved_by_credit_before else None
+        first_crossed = first_crossed_multiple_of_10m(prev_total, new_total) if approved_by_credit_before else None
         same_block = int(prev_total // 10_000_000) == int(new_total // 10_000_000)
-        addon_active = approved_by_credit_before and new_total >= 20_000_000 and crossed is None and same_block
+        addon_active = approved_by_credit_before and new_total >= 20_000_000 and first_crossed is None and same_block
 
-        if approved_by_credit_before and crossed is not None:
+        if approved_by_credit_before and first_crossed is not None:
             approver = "Kredit"
+            lower = fmt_mio(first_crossed - 0.01)
+            upper = fmt_mio(first_crossed)
             crossing_reason = (
-                f"Nuværende engagement {fmt_dkk(prev_total)} → fremtidigt {fmt_dkk(new_total)} "
-                f"passerer {crossed} mio. (multiplum af 10 mio.). "
+                f"Årsag: Nuværende engagement {fmt_dkk(prev_total)} → fremtidigt {fmt_dkk(new_total)} "
+                f"passerer grænsen ved {upper} mio. (fra ≤ {lower} mio. til ≥ {upper} mio.). "
                 "Tillægsbeføjelse kan derfor ikke anvendes; bevillingen skal ske i Kredit."
             )
         elif approved_by_credit_before and addon_active:
             approver = "Erhvervschef eller Lokalbankdirektør (tillægsbeføjelse)"
-            crossing_reason = "Ingen 10 mio.-passage og samme 10 mio.-blok – tillægsbeføjelse kan anvendes."
+            crossing_reason = "Årsag: Ingen 10 mio.-passage og samme 10 mio.-blok – tillægsbeføjelse kan anvendes."
         else:
             # Første gang i Kredit (eller ikke omfattet af tillægsregler)
             bank_amount = new_bank if include_bank else 0.0
@@ -205,11 +211,10 @@ if btn:
     st.subheader("Resultat")
     st.success(f"**Bevilger:** {approver}")
 
-    # Eksplicit årsagsforklaring ved 10 mio.-passage eller risikolån
     if risk_override:
         st.warning(f"Årsag: {risk_reason}.")
-    elif approved_by_credit_before and crossed is not None:
-        st.warning(f"Årsag: {crossing_reason}")
+    elif approved_by_credit_before and first_crossed is not None:
+        st.warning(crossing_reason)
 
     st.markdown(
         f"""
@@ -234,7 +239,7 @@ if btn:
   Ved standardgrænser: Rådgiver ≤ **3,0 mio.**, Erhvervschef ≤ **5,0 mio.**, Lokalbankdirektør ≤ **10,0 mio.**.
 
 **Tidligere bevilget i Kredit/Regional Kredit:**
-- 10 mio.-spring: **{('Ja – passeret ' + str(crossed) + ' mio.') if (approved_by_credit_before and crossed) else 'Nej'}**
+- 10 mio.-spring (første passerede grænse): **{('Ja – ' + fmt_mio(first_crossed) + ' mio. (fra ≤ ' + fmt_mio(first_crossed - 0.01) + ' mio.)') if (approved_by_credit_before and first_crossed) else 'Nej'}**
 - Tillægsbeføjelse (samme 10 mio.-blok, ingen passage): **{addon_active if approved_by_credit_before else False}**
 
 **Privat Realkredit – risikolån:** **{risk_override}**{(' — ' + risk_reason) if risk_override else ''}
@@ -250,7 +255,8 @@ if btn:
     st.caption(
         "• Bevilger fastlægges ud fra **samlet fremtidigt engagement** (Bank + Realkredit). "
         "• Før første Kredit-bevilling må **Bank-delen** maksimalt udgøre **50% af den godkendende rolle-beføjelse**. "
-        "• Ved tidligere Kredit-bevilling: Passeres et multiplum af 10 mio. kr. (20, 30, 40, …), kan tillægsbeføjelsen **ikke** anvendes, og bevilling skal ske i **Kredit**; "
+        "• Ved tidligere Kredit-bevilling: Passeres den **første** 10 mio.-grænse (fx 30 mio. – dvs. fra ≤ 29,99 til ≥ 30,00), "
+        "kan tillægsbeføjelsen **ikke** anvendes og bevillingen skal ske i **Kredit**; "
         "ellers (samme 10 mio.-blok) kan **Erhvervschef eller Lokalbankdirektør** anvende tillægsbeføjelse. "
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) bevilges i **Kreditpolitik & Bevilling**."
     )
