@@ -258,8 +258,9 @@ if btn:
         "• Ved tidligere Kredit-bevilling: Passeres den **første** 10 mio.-grænse (fx 30 mio. – dvs. fra ≤ 29,99 til ≥ 30,00), "
         "kan tillægsbeføjelsen **ikke** anvendes og bevillingen skal ske i **Kredit**; "
         "ellers (samme 10 mio.-blok) kan **Erhvervschef eller Lokalbankdirektør** anvende tillægsbeføjelse. "
-        "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) bevilges i **Kreditpolitik & Bevilling**."
+        "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) skal bevilges af **Kredit København**."
     )
+
 
 
 
