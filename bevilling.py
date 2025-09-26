@@ -102,8 +102,17 @@ st.divider()
 
 # Tidligere Kredit
 approved_by_credit_before = st.checkbox(
-    "Tidligere bevilget i Kredit/Regional Kredit", value=False,
-    help="Aktiverer 10 mio.-spring og tillægsbeføjelse i samme 10 mio.-blok."
+    "Tidligere bevilget i Kredit/Regional Kredit",
+    value=False,
+    help=(
+        "Aktiverer 10 mio.-spring og tillægsbeføjelse i samme 10 mio.-blok.\n\n"
+        "Hvis kunden ikke tidligere er bevilget i Kredit, gælder 50%-reglen for bankfaciliteter: "
+        "Der kan decentralt bevilges bank op til 50% af den pågældende rolle-beføjelse i 'samlet engagement', "
+        "før sagen første gang skal bevilges i Regional Kredit eller Kreditpolitik & Bevilling.\n"
+        "Eksempel: Rådgiver-grænse 6 mio. → bank op til 3 mio.; Erhvervschef 10 mio. → 5 mio.; "
+        "Lokalbankdirektør 20 mio. → 10 mio. "
+        "(fx 5,0 mio. Realkredit + 0,2 mio. Bank = 5,2 mio. samlet → Rådgiver kan bevilge, fordi bankdelen 0,2 ≤ 3,0)."
+    )
 )
 
 # Huskenote for Erhverv (kun tekst – ikke logik)
@@ -228,6 +237,7 @@ if btn:
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) bevilges i **Kreditpolitik & Bevilling**. "
         "• For **Erhverv** vises “ny erhvervskunde”-reglen kun som huskeregel (ikke del af beregningen)."
     )
+
 
 
 
