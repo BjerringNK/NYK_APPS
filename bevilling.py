@@ -59,9 +59,9 @@ st.title("Bevillingsberegner")
 # Vælg faciliteter
 cf1, cf2 = st.columns(2)
 with cf1:
-    include_bank = st.checkbox("Omfatter **Bank**-faciliteter", value=True)
+    include_bank = st.checkbox("Omfatter **Bank**-faciliteter", value=False)
 with cf2:
-    include_rk = st.checkbox("Omfatter **Realkredit**", value=True)
+    include_rk = st.checkbox("Omfatter **Realkredit**", value=False)
 
 if not include_bank and not include_rk:
     st.info("Vælg mindst én facilitet: **Bank** og/eller **Realkredit** for at indtaste engagement.")
@@ -260,6 +260,7 @@ if btn:
         "ellers (samme 10 mio.-blok) kan **Erhvervschef eller Lokalbankdirektør** anvende tillægsbeføjelse. "
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) skal bevilges af **Kredit København**."
     )
+
 
 
 
