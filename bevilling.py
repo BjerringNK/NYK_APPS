@@ -111,14 +111,14 @@ approved_by_credit_before = st.checkbox(
     "Tidligere bevilget i Kredit/Regional Kredit",
     value=False,
     help=(
-        "• Hvis markeret:\n"
-        "   – 10 mio.-spring: Passeres et nyt multiplum af 10 mio. i **samlet engagement** (20, 30, 40, …), skal bevillingen ske i **Kredit**.\n"
-        "   – Tillægsbeføjelse: Hvis der **ikke** passeres et multiplum, og man er i **samme 10 mio.-blok** (fx 21→25), kan **Erhvervschef eller Lokalbankdirektør** bevilge.\n"
-        "• Hvis **ikke** markeret (første gang):\n"
-        "   – **50%-regel for Bank**: Den godkendende rolle må højst bevilge **Bank = 50%** af rolle-beføjelsen i 'samlet engagement'.\n"
-        "   – Standardgrænser ⇒ Rådgiver 3,0 mio., Erhvervschef 5,0 mio., Lokalbankdirektør 10,0 mio.\n"
-        "   – Eksempel: 5,0 mio. Realkredit + 0,2 mio. Bank = 5,2 mio. samlet → Rådgiver kan bevilge (bank 0,2 ≤ 3,0)."
-    )
+        "**Hvis markeret:**\n"
+        "- **10 mio.-spring:** Passeres et nyt multiplum af 10 mio. i **samlet engagement** (20, 30, 40, …) → bevilling i **Kredit**.\n"
+        "- **Tillægsbeføjelse:** Hvis der **ikke** passeres et multiplum, og man er i **samme 10 mio.-blok** (fx 21→25), kan **Erhvervschef eller Lokalbankdirektør** bevilge.\n\n"
+        "**Hvis ikke markeret (første gang):**\n"
+        "- **50%-regel (Bank):** Den godkendende rolle må højst bevilge **Bank = 50%** af rolle-beføjelsen i 'samlet engagement'.\n"
+        "- **Standardgrænser:** Rådgiver 3,0 mio.; Erhvervschef 5,0 mio.; Lokalbankdirektør 10,0 mio.\n"
+        "- **Eksempel:** 5,0 mio. Realkredit + 0,2 mio. Bank = 5,2 mio. samlet → Rådgiver kan bevilge (bank 0,2 ≤ 3,0)."
+    ),
 )
 
 # Huskenote for Erhverv
@@ -260,6 +260,7 @@ if btn:
         "ellers (samme 10 mio.-blok) kan **Erhvervschef eller Lokalbankdirektør** anvende tillægsbeføjelse. "
         "• Privat Realkredit med **LTV > 60%** og **gældsfaktor > 4** (ejer-/fritidshus) skal bevilges af **Kredit København**."
     )
+
 
 
 
