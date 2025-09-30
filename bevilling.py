@@ -11,10 +11,7 @@ def fmt_mio(x_mio: float) -> str:
     return f"{x_mio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def first_crossed_multiple_of_10m(prev_total: float, new_total: float) -> int | None:
-    """
-    Returnér første passerede 10-mio.-grænse i mio. (10, 20, 30, …),
-    hvis samlet engagement krydser en sådan grænse; ellers None.
-    """
+    """Første passerede 10-mio.-grænse i mio. (10, 20, 30, …), ellers None."""
     ten = 10_000_000
     k_prev = int(prev_total // ten)
     k_new  = int(new_total  // ten)
@@ -27,50 +24,30 @@ def normalize_limits(r: float, e: float, l: float):
     vals = sorted([r, e, l])
     return {"Rådgiver": vals[0], "Erhvervschef": vals[1], "Lokalbankdirektør": vals[2]}, corrected
 
-def choose_role_first_time_explain(total: float, bank_amount: float, limits: dict):
+def choose_role_first_time(total: float, bank_amount: float, limits: dict):
     """
-    Første gang (aldrig i Kredit): vælg LAVESTE rolle, der opfylder
+    Før første Kredit-bevilling: Find laveste rolle som opfylder
       A) total ≤ rolle-grænse
       B) bank_amount ≤ 50% af rolle-grænsen
-    Returnerer (rolle, begrundelseslinjer)
+    Returnér (rolle, kort_begrundelse)
     """
-    lines = []
     for role in ["Rådgiver", "Erhvervschef", "Lokalbankdirektør"]:
         lim = limits[role]
-        a = total <= lim
-        b = bank_amount <= lim / 2
-        lines.append(
-            f"{role}: A) samlet {fmt_dkk(total)} ≤ {fmt_dkk(lim)} = {a}; "
-            f"B) bank {fmt_dkk(bank_amount)} ≤ {fmt_dkk(lim/2)} (50%) = {b}."
-        )
-        if a and b:
-            lines.insert(0, f"{role} kan bevilge, da både A og B er opfyldt.")
-            return role, lines
-    lines.insert(0, "Ingen decentral rolle kan opfylde både A og B → Kredit.")
-    return "Kredit", lines
+        if total <= lim and bank_amount <= lim / 2:
+            short = (f"{role} kan bevilge, da samlet engagement {fmt_dkk(total)} ≤ {fmt_dkk(lim)} "
+                     f"og bankdelen {fmt_dkk(bank_amount)} ≤ {fmt_dkk(lim/2)} (50%).")
+            return role, short
+    return "Kredit", "Kredit: Ingen decentral rolle kan opfylde både samlet grænse og 50%-kravet for bankdelen."
 
-def choose_role_normal_explain(total: float, limits: dict):
-    """
-    Efter første Kredit (eller ikke under tillægsregler): kun A) total ≤ rolle-grænse.
-    Returnerer (rolle, begrundelseslinjer)
-    """
-    lines = [
-        f"Samlet engagement {fmt_dkk(total)} sammenholdes med grænserne:"
-        f" Rådgiver {fmt_dkk(limits['Rådgiver'])}, "
-        f"Erhvervschef {fmt_dkk(limits['Erhvervschef'])}, "
-        f"Lokalbankdirektør {fmt_dkk(limits['Lokalbankdirektør'])}."
-    ]
+def choose_role_normal(total: float, limits: dict):
+    """Efter første Kredit (eller uden tillægsregler): kun total ≤ rolle-grænse. Returnér (rolle, kort_begrundelse)."""
     if total <= limits["Rådgiver"]:
-        lines.append("Rådgiver kan bevilge, da samlet engagement er under/lig Rådgiver-grænsen.")
-        return "Rådgiver", lines
+        return "Rådgiver", f"Rådgiver kan bevilge, da samlet engagement {fmt_dkk(total)} ≤ {fmt_dkk(limits['Rådgiver'])}."
     if total <= limits["Erhvervschef"]:
-        lines.append("Erhvervschef kan bevilge, da samlet engagement er under/lig Erhvervschef-grænsen.")
-        return "Erhvervschef", lines
+        return "Erhvervschef", f"Erhvervschef kan bevilge, da samlet engagement {fmt_dkk(total)} ≤ {fmt_dkk(limits['Erhvervschef'])}."
     if total <= limits["Lokalbankdirektør"]:
-        lines.append("Lokalbankdirektør kan bevilge, da samlet engagement er under/lig LBD-grænsen.")
-        return "Lokalbankdirektør", lines
-    lines.append("Ingen decentral grænse kan rumme totalen → Kredit.")
-    return "Kredit", lines
+        return "Lokalbankdirektør", f"Lokalbankdirektør kan bevilge, da samlet engagement {fmt_dkk(total)} ≤ {fmt_dkk(limits['Lokalbankdirektør'])}."
+    return "Kredit", "Kredit: Samlet engagement overstiger Lokalbankdirektørs grænse."
 
 # ---------- UI ----------
 st.title("Bevillingsberegner")
@@ -80,16 +57,17 @@ segment = st.selectbox("Kundesegment", ["Erhverv", "Privat", "Privat og Erhverv"
 segment_has_priv = segment in ["Privat", "Privat og Erhverv"]
 segment_has_biz  = segment in ["Erhverv", "Privat og Erhverv"]
 
-# Ny erhvervskunde (radio)
+# Ny erhvervskunde (radio) – huskeregel vises kun ved 'Ja'
 new_business = False
 if segment_has_biz:
     nb_choice = st.radio("Ny erhvervskunde?", ["Nej", "Ja"], horizontal=True, index=0)
     new_business = (nb_choice == "Ja")
-    st.info(
-        "Huskeregel: Bevillinger til **nye erhvervskunder** med **nyt bankengagement > 500.000 kr.** "
-        "eller **koncernengagement > 1 mio. kr.** skal bevilges af **rådgiver og centerledelse i fællesskab** "
-        "inden for gældende bevillingsbeføjelser."
-    )
+    if new_business:
+        st.info(
+            "Huskeregel: Bevillinger til **nye erhvervskunder** med **nyt bankengagement > 500.000 kr.** "
+            "eller **koncernengagement > 1 mio. kr.** skal bevilges af **rådgiver og centerledelse i fællesskab** "
+            "inden for gældende bevillingsbeføjelser."
+        )
 
 st.divider()
 
@@ -191,67 +169,55 @@ if btn:
         st.error("Vælg mindst én facilitet: **Bank** og/eller **Realkredit**.")
         st.stop()
 
-    # Privat Realkredit risikolån (override)
+    # RISIKOLÅN (Privat Realkredit, ejer/fritid + LTV>60 & GF>4)
     risk_override = False
-    risk_reason = ""
     if include_rk and segment_has_priv and owner_or_holiday:
         if (ltv_pct is not None and debt_factor is not None) and (ltv_pct > 60 and debt_factor > 4):
             risk_override = True
-            risk_reason = "Privat Realkredit til ejer-/fritidshus med LTV > 60% og gældsfaktor > 4"
 
-    reason_lines = []  # forklaring til resultat
-    joint_required = False
-    first_crossed = None
-    addon_active = False
+    # Afgørelse + begrundelse (kort og brugbar)
     approver = ""
+    reason = ""
 
-    # Ny erhvervskunde – logik: hvis Ja og (bank > 500k eller samlet > 1m) → fællesbevilling
-    if segment_has_biz and new_business:
-        if (include_bank and new_bank > 500_000) or (new_total > 1_000_000):
-            joint_required = True
-            reason_lines.append(
-                "Ny erhvervskunde: bankdelen over 500.000 kr. eller samlet engagement over 1 mio. kr. "
-                "→ fællesbevilling (rådgiver + centerledelse) kræves."
-            )
-        else:
-            reason_lines.append("Ny erhvervskunde: under tærsklerne for fællesbevilling.")
+    # Ny erhvervskunde – fællesbevilling (brug eksisterende tal: ny bank = new_bank, "koncern" = new_total)
+    joint_required = bool(segment_has_biz and new_business and (new_bank > 500_000 or new_total > 1_000_000))
 
     if risk_override:
         approver = "Kreditpolitik & Bevilling (risikolån)"
-        reason_lines.insert(0, risk_reason + " → skal bevilges i Kreditpolitik & Bevilling.")
+        reason = ("Privat Realkredit til ejer-/fritidshus med LTV > 60% og gældsfaktor > 4 "
+                  "→ skal bevilges i Kreditpolitik & Bevilling.")
     else:
         if approved_by_credit_before:
             # 10-mio.-regler (starter ved 10)
             first_crossed = first_crossed_multiple_of_10m(prev_total, new_total)
             if first_crossed is not None:
-                approver = "Kredit"
                 lower = fmt_mio(first_crossed - 0.01)
                 upper = fmt_mio(first_crossed)
-                reason_lines.insert(
-                    0,
-                    f"Nuværende {fmt_dkk(prev_total)} → fremtidigt {fmt_dkk(new_total)} "
-                    f"passerer grænsen ved {upper} mio. (fra ≤ {lower} mio. til ≥ {upper} mio.) "
-                    f"→ tillægsbeføjelse kan ikke anvendes."
-                )
+                approver = "Kredit"
+                reason = (f"Nuværende {fmt_dkk(prev_total)} → fremtidigt {fmt_dkk(new_total)} passerer "
+                          f"grænsen ved {upper} mio. (fra ≤ {lower} mio. til ≥ {upper} mio.) "
+                          f"→ tillægsbeføjelse kan ikke anvendes.")
             else:
                 # Samme 10m-blok → tillægsbeføjelse
                 block = int(new_total // 10_000_000)  # 0:<10, 1:10-<20, 2:20-<30, ...
                 if block >= 1:
-                    addon_active = True
                     if block == 1:
                         approver = "Erhvervschef (tillægsbeføjelse)"
-                        reason_lines.insert(0, "Tidligere Kredit: ingen 10-mio.-passage; blok 10–<20 → Erhvervschef (tillægsbeføjelse).")
+                        reason = "Tidligere Kredit, ingen 10-mio. passage; blok 10–<20 → Erhvervschef kan bevilge (tillægsbeføjelse)."
                     else:
                         approver = "Lokalbankdirektør (tillægsbeføjelse)"
-                        reason_lines.insert(0, "Tidligere Kredit: ingen 10-mio.-passage; blok ≥20 → Lokalbankdirektør (tillægsbeføjelse).")
+                        reason = "Tidligere Kredit, ingen 10-mio. passage; blok ≥20 → Lokalbankdirektør kan bevilge (tillægsbeføjelse)."
                 else:
-                    approver, lines = choose_role_normal_explain(new_total, limits)
-                    reason_lines = lines + reason_lines
+                    approver, reason = choose_role_normal(new_total, limits)
         else:
             # Første gang i Kredit → 50%-regel (kun Bank)
             bank_amount = new_bank if include_bank else 0.0
-            approver, lines = choose_role_first_time_explain(new_total, bank_amount, limits)
-            reason_lines = lines + reason_lines
+            approver, reason = choose_role_first_time(new_total, bank_amount, limits)
+
+    # Sammensæt badge + evt. fællesbevilling
+    badge = approver
+    if joint_required and approver not in ["Kredit", "Kreditpolitik & Bevilling (risikolån)"]:
+        badge = f"{approver} — **fællesbevilling påkrævet (rådgiver + centerledelse)**"
 
     # ---------- Output ----------
     if corrected:
@@ -259,13 +225,7 @@ if btn:
                    "De er anvendt i stigende rækkefølge i beregningen.")
 
     st.subheader("Resultat")
-    badge = approver
-    if joint_required and approver not in ["Kredit", "Kreditpolitik & Bevilling (risikolån)"]:
-        badge = f"{approver} — **fællesbevilling påkrævet (rådgiver + centerledelse)**"
-    st.success(f"**Bevilger:** {badge}")
-
-    st.markdown("#### Logik bag afgørelsen")
-    st.markdown("\n".join([f"- {line}" for line in reason_lines]))
+    st.success(f"**Bevilger:** {badge}\n\n**Begrundelse:** {reason}")
 
     st.markdown(
         f"""
@@ -279,6 +239,7 @@ if btn:
 - **Ændring:** {fmt_dkk(max(new_total - prev_total, 0))}
 """
     )
+
 
 
 
